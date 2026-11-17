@@ -1,7 +1,11 @@
+
 numpy
 pandas
 matplotlib
 seaborn
 scikit-learn
+yfinance
+pandas-datareader
 jupyter
-ipykernel
+notebook
+
