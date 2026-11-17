@@ -1,0 +1,654 @@
+├── Rapport RIAHI IKRAM.pdf
+└── data (4300 tokens)
+
+
+/Rapport RIAHI IKRAM.pdf:
+--------------------------------------------------------------------------------
+https://raw.githubusercontent.com/ikrameriahi20-a11y/23009083-RIAHI-IKRAM-GRP-3/HEAD/Rapport RIAHI IKRAM.pdf
+
+
+--------------------------------------------------------------------------------
+/data:
+--------------------------------------------------------------------------------
+  1 | Projet de Machine Learning : Battre la marche aléatoire avec KNN
+  2 | 
+  3 | Intérêt du sujet :
+  4 | 
+  5 | Sur les marchés financiers, il est difficile de prévoir la direction future des cours, car les variations quotidiennes comportent une forte composante aléatoire. L'objectif est de déterminer si un algorithme de Machine Learning peut exploiter les informations historiques pour améliorer la prévision de la direction du marché.
+  6 | 
+  7 | Problématique :
+  8 | 
+  9 | Est-ce que l'algorithme K-Nearest Neighbors (KNN), utilisant les rendements historiques et la volatilité passée du S&P 500, permet de prédire la hausse ou la baisse du marché le jour suivant avec une performance supérieure à une stratégie de référence naïve ?
+ 10 | 
+ 11 | Objectif mesurable :
+ 12 | 
+ 13 | Obtenir une balanced accuracy supérieure à celle de la référence naïve, avec une amélioration cible d'au moins deux points de pourcentage sur le jeu de test chronologique, jamais utilisé pendant le réglage.
+ 14 | 
+ 15 | Nature du problème :
+ 16 | 
+ 17 | Classification binaire :
+ 18 | 
+ 19 | Classe 1 : le marché monte le jour suivant.
+ 20 | Classe 0 : le marché baisse ou ne monte pas le jour suivant.
+ 21 | 
+ 22 | [2]
+ 23 | 0 s
+ 24 | import numpy as np
+ 25 | import pandas as pd
+ 26 | import matplotlib.pyplot as plt
+ 27 | import seaborn as sns
+ 28 | import sklearn
+ 29 | import sys
+ 30 | import os
+ 31 | 
+ 32 | from sklearn.preprocessing import StandardScaler
+ 33 | from sklearn.pipeline import Pipeline
+ 34 | from sklearn.neighbors import KNeighborsClassifier
+ 35 | from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+ 36 | from sklearn.dummy import DummyClassifier
+ 37 | from sklearn.base import clone
+ 38 | 
+ 39 | from sklearn.metrics import (
+ 40 |     accuracy_score,
+ 41 |     balanced_accuracy_score,
+ 42 |     precision_score,
+ 43 |     recall_score,
+ 44 |     f1_score,
+ 45 |     confusion_matrix,
+ 46 |     roc_auc_score
+ 47 | )
+ 48 | 
+ 49 | from sklearn.inspection import permutation_importance
+ 50 | 
+ 51 | GRAINE = 42
+ 52 | np.random.seed(GRAINE)
+ 53 | 
+ 54 | os.makedirs("data/raw", exist_ok=True)
+ 55 | os.makedirs("figures", exist_ok=True)
+ 56 | os.makedirs("results", exist_ok=True)
+ 57 | 
+ 58 | print("Python :", sys.version)
+ 59 | print("Pandas :", pd.__version__)
+ 60 | print("NumPy :", np.__version__)
+ 61 | print("Scikit-learn :", sklearn.__version__)
+ 62 | 
+ 63 | Python : 3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]
+ 64 | Pandas : 2.2.3
+ 65 | NumPy : 2.4.6
+ 66 | Scikit-learn : 1.6.1
+ 67 | 
+ 68 | [ ]
+ 69 | 
+ 70 | Commencez à coder ou à générer avec l'IA.
+ 71 | La source utilisé: J'utilise le S&P 500 et la source est FRED
+ 72 | 
+ 73 | 
+ 74 | [4]
+ 75 | 0 s
+ 76 | url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500"
+ 77 | 
+ 78 | df = pd.read_csv(url)
+ 79 | 
+ 80 | df.to_csv(
+ 81 |     "data/raw/SP500.csv",
+ 82 |     index=False
+ 83 | )
+ 84 | 
+ 85 | print(df.head())
+ 86 | print(df.shape)
+ 87 | print(df.info())
+ 88 |   observation_date    SP500
+ 89 | 0       2025-11-17  6672.41
+ 90 | 1       2025-11-18  6617.32
+ 91 | 2       2025-11-19  6642.16
+ 92 | 3       2025-11-20  6538.76
+ 93 | 4       2025-11-21  6602.99
+ 94 | (261, 2)
+ 95 | <class 'pandas.core.frame.DataFrame'>
+ 96 | RangeIndex: 261 entries, 0 to 260
+ 97 | Data columns (total 2 columns):
+ 98 |  #   Column            Non-Null Count  Dtype  
+ 99 | ---  ------            --------------  -----  
+100 |  0   observation_date  261 non-null    object 
+101 |  1   SP500             251 non-null    float64
+102 | dtypes: float64(1), object(1)
+103 | memory usage: 4.2+ KB
+104 | None
+105 | Double-cliquez (ou appuyez sur Entrée) pour modifier
+106 | 
+107 | Troisième cellule Python : nettoyage
+108 | 
+109 | 
+110 | [ ]
+111 | df.columns = ["Date", "SP500"]
+112 | 
+113 | df["Date"] = pd.to_datetime(df["Date"])
+114 | 
+115 | df["SP500"] = pd.to_numeric(
+116 |     df["SP500"], errors="coerce"
+117 | )
+118 | 
+119 | df = df.dropna()
+120 | 
+121 | df = df.sort_values("Date")
+122 | 
+123 | df = df.drop_duplicates("Date")
+124 | 
+125 | df = df.set_index("Date")
+126 | 
+127 | print(df.head())
+128 | print(df.tail())
+129 | print(df.describe())
+130 | Double-cliquez (ou appuyez sur Entrée) pour modifier
+131 | 
+132 | Quatrième cellule : Afficher la période et le nombre d'observations
+133 | 
+134 | 
+135 | [ ]
+136 | print("Nombre d'observations :", len(df))
+137 | 
+138 | print("Date de début :", df.index.min())
+139 | 
+140 | print("Date de fin :", df.index.max())
+141 | 
+142 | print("Types des variables :")
+143 | print(df.dtypes)
+144 | 
+145 | Double-cliquez (ou appuyez sur Entrée) pour modifier
+146 | 
+147 | Section 03 : Exploration des données
+148 | 
+149 | Graphique 1 : évolution du S&P 500
+150 | 
+151 | 
+152 | [5]
+153 | 0 s
+154 | plt.figure(figsize=(12,5))
+155 | plt.plot(df.index, df["SP500"])
+156 | plt.title("Evolution du S&P 500")
+157 | plt.xlabel("Date")
+158 | plt.ylabel("Points d'indice")
+159 | plt.grid()
+160 | plt.show()
+161 | 
+162 | 
+163 | [ ]
+164 | 
+165 | Commencez à coder ou à générer avec l'IA.
+166 | **Graphique 2 : **rendements quotidiens
+167 | 
+168 | 
+169 | [ ]
+170 | df["return"] = np.log(df["SP500"]).diff()
+171 | 
+172 | plt.figure(figsize=(12,5))
+173 | plt.plot(df.index, df["return"])
+174 | plt.axhline(0)
+175 | plt.title("Rendements quotidiens")
+176 | plt.xlabel("Date")
+177 | plt.ylabel("Rendement logarithmique")
+178 | plt.grid()
+179 | plt.show()
+180 | Graphique 3 : volatilité historique
+181 | 
+182 | 
+183 | [ ]
+184 | df["volatility_20"] = (
+185 |     df["return"].rolling(20).std()
+186 | )
+187 | 
+188 | plt.figure(figsize=(12,5))
+189 | plt.plot(df.index, df["volatility_20"])
+190 | plt.title("Volatilité historique sur 20 jours")
+191 | plt.xlabel("Date")
+192 | plt.ylabel("Ecart-type")
+193 | plt.grid()
+194 | plt.show()
+195 | Double-cliquez (ou appuyez sur Entrée) pour modifier
+196 | 
+197 | 
+198 | [6]
+199 | 0 s
+200 | print(df.describe())
+201 | 
+202 | print("Valeurs manquantes :")
+203 | print(df.isnull().sum())
+204 | 
+205 | print("Doublons :",
+206 |       df.index.duplicated().sum())
+207 |              SP500
+208 | count   251.000000
+209 | mean   7243.411912
+210 | std     396.670398
+211 | min    6343.720000
+212 | 25%    6881.465000
+213 | 50%    7365.460000
+214 | 75%    7600.230000
+215 | max    7818.930000
+216 | Valeurs manquantes :
+217 | observation_date     0
+218 | SP500               10
+219 | dtype: int64
+220 | Doublons : 0
+221 | Double-cliquez (ou appuyez sur Entrée) pour modifier
+222 | 
+223 | Section 04 — Préparation des données
+224 | 
+225 | 
+226 | [13]
+227 | 0 s
+228 | df["log_price"] = np.log(df["SP500"])
+229 | 
+230 | df["return"] = df["log_price"].diff()
+231 | 
+232 | for lag in [1, 2, 3, 5, 10, 20]:
+233 |     df[f"ret_lag_{lag}"] = (
+234 |         df["return"].shift(lag - 1)
+235 |     )
+236 | 
+237 | df["volatility_5"] = (
+238 |     df["return"].rolling(5).std()
+239 | )
+240 | 
+241 | df["volatility_20"] = (
+242 |     df["return"].rolling(20).std()
+243 | )
+244 | 
+245 | future_return = (
+246 |     df["log_price"].shift(-1)
+247 |     - df["log_price"]
+248 | )
+249 | 
+250 | df["target"] = np.where(
+251 |     future_return.isna(),
+252 |     np.nan,
+253 |     (future_return > 0).astype(int)
+254 | )
+255 | 
+256 | df = df.dropna()
+257 | 
+258 | [ ]
+259 | features = [
+260 |     "ret_lag_1",
+261 |     "ret_lag_2",
+262 |     "ret_lag_3",
+263 |     "ret_lag_5",
+264 |     "ret_lag_10",
+265 |     "ret_lag_20",
+266 |     "volatility_5",
+267 |     "volatility_20"
+268 | ]
+269 | 
+270 | X = df[features]
+271 | y = df["target"].astype(int)
+272 | 
+273 | [ ]
+274 | print(y.value_counts())
+275 | 
+276 | print(y.value_counts(normalize=True))
+277 | 
+278 | [ ]
+279 | 
+280 | Commencez à coder ou à générer avec l'IA.
+281 | **Section 05 **— Algorithme 9 : KNN
+282 | 
+283 | 
+284 | [ ]
+285 | pipeline_knn = Pipeline([
+286 |     ("scaler", StandardScaler()),
+287 |     ("knn", KNeighborsClassifier())
+288 | ])
+289 | **Section 06 ** Protocole expérimental et apprentissage
+290 | 
+291 | 
+292 | [ ]
+293 | baseline = DummyClassifier(
+294 |     strategy="most_frequent"
+295 | )
+296 | 
+297 | baseline_random = DummyClassifier(
+298 |     strategy="stratified",
+299 |     random_state=GRAINE
+300 | )
+301 | 
+302 | baseline.fit(X_train, y_train)
+303 | 
+304 | baseline_random.fit(X_train, y_train)
+305 | 
+306 | [ ]
+307 | param_grid = {
+308 |     "knn__n_neighbors": [3, 5, 7, 9, 15, 21],
+309 |     "knn__weights": ["uniform", "distance"],
+310 |     "knn__p": [1, 2]
+311 | }
+312 | 
+313 | [ ]
+314 | tscv = TimeSeriesSplit(
+315 |     n_splits=5,
+316 |     gap=1
+317 | )
+318 | 
+319 | [ ]
+320 | grid = GridSearchCV(
+321 |     pipeline_knn,
+322 |     param_grid,
+323 |     cv=tscv,
+324 |     scoring="balanced_accuracy",
+325 |     n_jobs=-1,
+326 |     refit=True
+327 | )
+328 | 
+329 | grid.fit(X_train, y_train)
+330 | 
+331 | [ ]
+332 | resultats_grid = pd.DataFrame(
+333 |     grid.cv_results_
+334 | )
+335 | 
+336 | colonnes = [
+337 |     "params",
+338 |     "mean_test_score",
+339 |     "std_test_score",
+340 |     "rank_test_score"
+341 | ]
+342 | 
+343 | display(
+344 |     resultats_grid[colonnes]
+345 |     .sort_values("rank_test_score")
+346 | )
+347 | 
+348 | [ ]
+349 | 
+350 | Commencez à coder ou à générer avec l'IA.
+351 | 
+352 | [ ]
+353 | 
+354 | Commencez à coder ou à générer avec l'IA.
+355 | Section 07 : Résultats et évaluation
+356 | 
+357 | 
+358 | [14]
+359 | 6 s
+360 | 
+361 | 
+362 | # Importation des bibliothèques
+363 | import numpy as np
+364 | import pandas as pd
+365 | import matplotlib.pyplot as plt
+366 | 
+367 | from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+368 | from sklearn.pipeline import Pipeline
+369 | from sklearn.preprocessing import StandardScaler
+370 | from sklearn.neighbors import KNeighborsClassifier
+371 | from sklearn.metrics import (
+372 |     accuracy_score,
+373 |     balanced_accuracy_score,
+374 |     classification_report,
+375 |     confusion_matrix,
+376 |     ConfusionMatrixDisplay
+377 | )
+378 | 
+379 | # 1. Définir les variables explicatives
+380 | features = [
+381 |     "ret_lag_1",
+382 |     "ret_lag_2",
+383 |     "ret_lag_3",
+384 |     "ret_lag_5",
+385 |     "ret_lag_10",
+386 |     "ret_lag_20",
+387 |     "volatility_5",
+388 |     "volatility_20"
+389 | ]
+390 | 
+391 | X = df[features]
+392 | y = df["target"].astype(int)
+393 | 
+394 | # 2. Séparation chronologique : 60% / 20% / 20%
+395 | n = len(df)
+396 | 
+397 | train_end = int(n * 0.60)
+398 | val_end = int(n * 0.80)
+399 | 
+400 | X_train = X.iloc[:train_end]
+401 | y_train = y.iloc[:train_end]
+402 | 
+403 | X_val = X.iloc[train_end:val_end]
+404 | y_val = y.iloc[train_end:val_end]
+405 | 
+406 | X_test = X.iloc[val_end:]
+407 | y_test = y.iloc[val_end:]
+408 | 
+409 | print("Taille entraînement :", len(X_train))
+410 | print("Taille validation :", len(X_val))
+411 | print("Taille test :", len(X_test))
+412 | 
+413 | # 3. Construire le modèle KNN
+414 | pipeline = Pipeline([
+415 |     ("scaler", StandardScaler()),
+416 |     ("knn", KNeighborsClassifier())
+417 | ])
+418 | 
+419 | # 4. Tester différentes configurations
+420 | param_grid = {
+421 |     "knn__n_neighbors": [3, 5, 7, 9, 15, 21],
+422 |     "knn__weights": ["uniform", "distance"],
+423 |     "knn__p": [1, 2]
+424 | }
+425 | 
+426 | # 5. Recherche des meilleurs paramètres
+427 | tscv = TimeSeriesSplit(n_splits=5, gap=1)
+428 | 
+429 | grid = GridSearchCV(
+430 |     pipeline,
+431 |     param_grid,
+432 |     cv=tscv,
+433 |     scoring="balanced_accuracy",
+434 |     n_jobs=-1
+435 | )
+436 | 
+437 | grid.fit(X_train, y_train)
+438 | 
+439 | # 6. Meilleur modèle
+440 | best_model = grid.best_estimator_
+441 | 
+442 | print("\nMeilleurs paramètres :")
+443 | print(grid.best_params_)
+444 | 
+445 | # 7. Évaluation sur validation
+446 | y_val_pred = best_model.predict(X_val)
+447 | 
+448 | print("\nRésultats sur validation")
+449 | print("Accuracy :", accuracy_score(y_val, y_val_pred))
+450 | print("Balanced accuracy :", balanced_accuracy_score(y_val, y_val_pred))
+451 | 
+452 | # 8. Réentraînement sur train + validation
+453 | X_train_val = pd.concat([X_train, X_val])
+454 | y_train_val = pd.concat([y_train, y_val])
+455 | 
+456 | best_model.fit(X_train_val, y_train_val)
+457 | 
+458 | # 9. Évaluation finale sur test
+459 | y_test_pred = best_model.predict(X_test)
+460 | 
+461 | print("\nRésultats finaux sur test")
+462 | print("Accuracy :", accuracy_score(y_test, y_test_pred))
+463 | print("Balanced accuracy :", balanced_accuracy_score(y_test, y_test_pred))
+464 | 
+465 | print("\nRapport de classification :")
+466 | print(classification_report(y_test, y_test_pred))
+467 | 
+468 | Taille entraînement : 47
+469 | Taille validation : 16
+470 | Taille test : 16
+471 | 
+472 | Meilleurs paramètres :
+473 | {'knn__n_neighbors': 9, 'knn__p': 1, 'knn__weights': 'distance'}
+474 | 
+475 | Résultats sur validation
+476 | Accuracy : 0.75
+477 | Balanced accuracy : 0.7301587301587301
+478 | 
+479 | Résultats finaux sur test
+480 | Accuracy : 0.4375
+481 | Balanced accuracy : 0.4375
+482 | 
+483 | Rapport de classification :
+484 |               precision    recall  f1-score   support
+485 | 
+486 |            0       0.45      0.62      0.53         8
+487 |            1       0.40      0.25      0.31         8
+488 | 
+489 |     accuracy                           0.44        16
+490 |    macro avg       0.43      0.44      0.42        16
+491 | weighted avg       0.43      0.44      0.42        16
+492 | 
+493 | /usr/local/lib/python3.13/dist-packages/sklearn/model_selection/_search.py:1108: UserWarning: One or more of the test scores are non-finite: [0.485      0.485      0.53       0.53       0.51       0.51
+494 |  0.58166667 0.54833333 0.54833333 0.54833333 0.53666667 0.57
+495 |  0.47333333 0.60166667 0.57       0.57              nan        nan
+496 |         nan        nan        nan        nan        nan        nan]
+497 |   warnings.warn(
+498 | 
+499 | [15]
+500 | 0 s
+501 | 
+502 | cm = confusion_matrix(y_test, y_test_pred)
+503 | 
+504 | disp = ConfusionMatrixDisplay(
+505 |     confusion_matrix=cm,
+506 |     display_labels=["Pas de hausse", "Hausse"]
+507 | )
+508 | 
+509 | disp.plot(cmap="Blues", values_format="d")
+510 | 
+511 | plt.title("Matrice de confusion - KNN")
+512 | plt.show()
+513 | 
+514 | 
+515 | 
+516 | [17]
+517 | 0 s
+518 | plt.figure(figsize=(14, 5))
+519 | 
+520 | # Utilisation de df.index au lieu de df["DATE"]
+521 | plt.plot(
+522 |     df.index[val_end:],
+523 |     y_test.values,
+524 |     label="Valeurs réelles",
+525 |     marker="o",
+526 |     markersize=3
+527 | )
+528 | 
+529 | plt.plot(
+530 |     df.index[val_end:],
+531 |     y_test_pred,
+532 |     label="Prédictions KNN",
+533 |     marker="x",
+534 |     markersize=3
+535 | )
+536 | 
+537 | plt.title("Comparaison des valeurs réelles et des prédictions KNN")
+538 | plt.xlabel("Date")
+539 | plt.ylabel("Direction du marché")
+540 | plt.yticks([0, 1], ["Pas de hausse", "Hausse"])
+541 | plt.legend()
+542 | plt.grid(True)
+543 | plt.show()
+544 | 
+545 | Comparaison avec une prédiction naïve
+546 | 
+547 | 
+548 | [18]
+549 | 0 s
+550 | 
+551 | from sklearn.dummy import DummyClassifier
+552 | 
+553 | baseline = DummyClassifier(strategy="most_frequent")
+554 | 
+555 | baseline.fit(X_train_val, y_train_val)
+556 | 
+557 | y_baseline = baseline.predict(X_test)
+558 | 
+559 | knn_score = balanced_accuracy_score(y_test, y_test_pred)
+560 | baseline_score = balanced_accuracy_score(y_test, y_baseline)
+561 | 
+562 | results = pd.DataFrame({
+563 |     "Modèle": ["KNN", "Prédiction majoritaire"],
+564 |     "Balanced Accuracy": [knn_score, baseline_score]
+565 | })
+566 | 
+567 | print(results)
+568 | 
+569 | plt.figure(figsize=(8, 5))
+570 | plt.bar(results["Modèle"], results["Balanced Accuracy"])
+571 | 
+572 | plt.title("Comparaison des performances : KNN vs Baseline")
+573 | plt.ylabel("Balanced Accuracy")
+574 | plt.ylim(0, 1)
+575 | plt.grid(axis="y")
+576 | plt.show()
+577 | 
+578 | 
+579 | Section 08 : Analyse critique
+580 | 
+581 | 08. Analyse critique
+582 | 8.1. Points forts de KNN
+583 | L'algorithme K-Nearest Neighbors (KNN) présente plusieurs avantages. Il est simple à comprendre et à mettre en œuvre. Il ne nécessite pas de supposer une relation linéaire entre les variables explicatives et la variable cible. Il peut ainsi identifier des relations complexes entre les rendements passés, la volatilité et la direction future du marché.
+584 | 
+585 | 8.2. Limites de KNN
+586 | Malgré ses avantages, KNN présente certaines limites. Il est sensible au choix du nombre de voisins (k), à la métrique de distance et à la normalisation des variables. De plus, ses performances peuvent diminuer lorsque les données sont bruitées ou lorsque les observations deviennent nombreuses. Sur les marchés financiers, les relations historiques ne garantissent pas les comportements futurs.
+587 | 
+588 | 8.3. Erreurs de classification
+589 | Le modèle cherche à prédire si le rendement du S&P 500 sera positif ou non lors de la séance suivante. Il peut commettre deux types d'erreurs : prédire une hausse alors que le marché baisse ou ne progresse pas, et prédire une absence de hausse alors que le marché progresse. Ces erreurs montrent que la direction du marché reste difficile à anticiper.
+590 | 
+591 | 8.4. Différences entre validation et test
+592 | Les performances obtenues sur les données de validation permettent de comparer les configurations de KNN et de sélectionner les paramètres du modèle. Les performances sur les données de test permettent ensuite d'évaluer sa capacité de généralisation sur des observations qui n'ont pas participé à cette sélection.
+593 | 
+594 | Une différence importante entre les résultats de validation et de test peut indiquer que le modèle généralise difficilement aux nouvelles données.
+595 | 
+596 | 8.5. Risque de Data Snooping
+597 | Le Data Snooping correspond au risque d'obtenir des résultats artificiellement favorables en multipliant les essais sur les mêmes données. Le test de plusieurs valeurs de k, de différentes métriques de distance ou de différentes configurations peut conduire à sélectionner un modèle adapté aux données historiques plutôt qu'à une véritable tendance généralisable.
+598 | 
+599 | Pour limiter ce risque, les données de test doivent rester indépendantes du processus de sélection des paramètres et être utilisées uniquement pour l'évaluation finale.
+600 | 
+601 | 8.6. Changements de régime du marché
+602 | Le marché financier peut connaître différents régimes : périodes de hausse, de baisse, de stabilité ou de forte volatilité. Les relations observées dans une période donnée peuvent ne plus être valables dans une autre période. Cette évolution constitue une difficulté supplémentaire pour KNN, qui s'appuie sur la similarité entre les observations historiques et les observations actuelles.
+603 | 
+604 | Section 09 — Conclusion et références
+605 | 9.1. Conclusion générale
+606 | Dans ce projet, nous avons étudié la possibilité de prévoir la direction du marché financier à partir des données historiques de l'indice S&P 500, en utilisant l'algorithme de classification K-Nearest Neighbors (KNN).
+607 | 
+608 | Les données utilisées proviennent de la plateforme FRED (Federal Reserve Economic Data). À partir des valeurs historiques du S&P 500, nous avons construit plusieurs variables explicatives, notamment les rendements logarithmiques passés et les mesures de volatilité sur différentes périodes. La variable cible permet de déterminer si l'indice connaîtra une hausse ou une absence de hausse lors de la séance suivante.
+609 | 
+610 | L'algorithme KNN a été choisi en raison de sa simplicité et de sa capacité à identifier des relations entre des observations similaires, sans imposer une relation linéaire entre les variables.
+611 | 
+612 | Une démarche expérimentale a été mise en place afin d'entraîner le modèle, de sélectionner ses meilleurs paramètres et d'évaluer ses capacités de généralisation sur des données chronologiques non utilisées pendant l'entraînement.
+613 | 
+614 | L'évaluation du modèle est également accompagnée d'une comparaison avec une méthode de prédiction naïve, afin d'étudier l'intérêt réel de l'utilisation de KNN.
+615 | 
+616 | Cependant, la prévision des marchés financiers reste une tâche complexe. Les rendements sont difficiles à anticiper, les données peuvent être bruitées et les comportements du marché peuvent évoluer au cours du temps. De plus, les performances obtenues sur les données historiques ne garantissent pas des performances similaires dans le futur.
+617 | 
+618 | En conclusion, ce projet permet d'étudier l'application de l'apprentissage automatique à la prévision de la direction du S&P 500 et de mieux comprendre les possibilités ainsi que les limites de l'algorithme KNN dans un contexte financier.
+619 | 
+620 | 9.2. Références bibliographiques
+621 | FRED – Federal Reserve Economic Data. Série historique S&P 500 (SP500).
+622 | https://fred.stlouisfed.org/series/SP500
+623 | 
+624 | Scikit-learn Documentation. K-Nearest Neighbors Classification.
+625 | https://scikit-learn.org/stable/modules/neighbors.html
+626 | 
+627 | Scikit-learn Documentation. Model Selection and Grid Search.
+628 | https://scikit-learn.org/stable/modules/grid_search.html
+629 | 
+630 | Scikit-learn Documentation. Classification Metrics.
+631 | https://scikit-learn.org/stable/modules/model_evaluation.html
+632 | 
+633 | Cours Algorithmes de Machine Learning. Support pédagogique du cours.
+634 | 
+635 | TP Machine Learning (TP ML). Travaux pratiques et exercices réalisés dans le cadre du module.
+636 | 
+637 | Remarque : les supports de cours et les travaux pratiques sont à compléter avec le nom de l'enseignant, l'établissement et l'année universitaire, si ces informations sont demandées.
+638 | 
+639 | 
+
+
+------------------------------------------------------------
