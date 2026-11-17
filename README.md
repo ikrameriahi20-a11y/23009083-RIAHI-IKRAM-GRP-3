@@ -1,50 +1,40 @@
-# F8 — Battre la marche aléatoire avec KNN
 
-## Présentation du projet
+# Projet F8 : Battre la marche aléatoire ?
 
-Ce projet vise à étudier si l'algorithme K-Nearest Neighbors (KNN) peut prédire la direction du marché boursier américain le jour suivant, à partir des rendements historiques et de la volatilité passée du S&P 500.
+## Prévision de la direction du S&P 500 avec KNN
 
-L'objectif est de déterminer si KNN peut faire mieux qu'une prédiction naïve, appelée marche aléatoire dans le cadre de ce projet.
+### Présentation
+Ce projet étudie la possibilité de prévoir la direction du marché boursier américain S&P 500 à l'aide d'un algorithme de Machine Learning.
 
-## Données utilisées
+### Problématique
+Est-il possible de prévoir la direction du S&P 500 et d'obtenir de meilleures performances qu'une stratégie de référence fondée sur la marche aléatoire ?
 
-- **Source :** Federal Reserve Economic Data (FRED).
-- **Série :** S&P 500 (`SP500`).
-- **Lien :** https://fred.stlouisfed.org/series/SP500
-- **Fichier :** `data/raw/SP500.csv`
+### Objectifs
+- Collecter les données historiques du S&P 500.
+- Préparer et analyser les données.
+- Construire un modèle K-Nearest Neighbors (KNN).
+- Évaluer les performances des prédictions.
+- Comparer le modèle à une stratégie de référence.
 
-## Méthodologie
+### Technologies
+- Python
+- Pandas
+- NumPy
+- Matplotlib
+- Seaborn
+- Scikit-learn
+- Jupyter Notebook
 
-Le projet utilise un modèle de classification K-Nearest Neighbors (KNN), associé à une normalisation des variables avec `StandardScaler`.
+### Organisation
+Le projet est organisé en plusieurs dossiers :
+- data : données brutes et préparées.
+- docs : documentation et références.
+- notebooks : analyses et expérimentations.
+- src : scripts Python.
+- figures : graphiques.
+- rapport : rapport final.
+- presentation : présentation orale.
 
-Les variables explicatives comprennent les rendements historiques décalés et des mesures de volatilité sur différentes périodes.
-
-Les performances du modèle sont comparées à celles d'un modèle de référence naïf (`DummyClassifier`).
-
-## Organisation du dépôt
-
-- `data/` : données utilisées dans le projet.
-- `docs/` : fiche du sujet et références.
-- `notebooks/` : notebook principal.
-- `figures/` : graphiques générés.
-- `rapport/` : rapport final.
-- `presentation/` : présentation du projet.
-
-## Exécution
-
-Installer les dépendances :
-
-```bash
-pip install -r requirements.txt
-```
-
-Ouvrir ensuite le notebook `notebooks/projet_F8.ipynb` avec Jupyter ou Google Colab.
-
-## Algorithme utilisé
-
-K-Nearest Neighbors (KNN), avec recherche des meilleurs hyperparamètres par validation croisée temporelle.
-
-## Auteurs
-
-À compléter.
+### Groupe
+Groupe 3.
 
