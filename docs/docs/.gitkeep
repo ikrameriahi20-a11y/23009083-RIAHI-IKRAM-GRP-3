@@ -1,0 +1,50 @@
+# Références bibliographiques
+
+Ce document présente les différentes sources de données, documentations et ressources pédagogiques utilisées dans le cadre du projet F8 : « Battre la marche aléatoire avec l'algorithme K-Nearest Neighbors (KNN) ».
+
+## 1. Sources des données
+
+- **FRED – Federal Reserve Economic Data.** Série historique de l'indice S&P 500 (SP500).
+  https://fred.stlouisfed.org/series/SP500
+
+## 2. Bibliothèques et documentations Python
+
+- **NumPy :** bibliothèque utilisée pour les calculs numériques et les opérations mathématiques.
+  https://numpy.org/doc/
+
+- **Pandas :** bibliothèque utilisée pour le chargement, le nettoyage, la manipulation et la préparation des données financières.
+  https://pandas.pydata.org/docs/
+
+- **Matplotlib :** bibliothèque utilisée pour la création des graphiques et la visualisation de l'évolution du S&P 500, des rendements et de la volatilité.
+  https://matplotlib.org/stable/
+
+- **Seaborn :** bibliothèque utilisée pour améliorer la visualisation graphique des données.
+  https://seaborn.pydata.org/
+
+- **Scikit-learn :** bibliothèque utilisée pour la construction, l'entraînement et l'évaluation du modèle K-Nearest Neighbors (KNN).
+  https://scikit-learn.org/stable/
+
+### Modules Scikit-learn utilisés
+
+- KNeighborsClassifier : classification par les plus proches voisins.
+- StandardScaler : standardisation des variables.
+- Pipeline : construction du pipeline de Machine Learning.
+- GridSearchCV : recherche des meilleurs hyperparamètres.
+- TimeSeriesSplit : validation croisée adaptée aux séries temporelles.
+- DummyClassifier : construction d'une référence naïve.
+- Metrics : évaluation des performances du modèle.
+
+## 3. Ressources pédagogiques
+
+- Support de cours : Algorithmes de Machine Learning.
+- Travaux pratiques (TP) de Machine Learning réalisés dans le cadre du module.
+
+## 4. Outils de développement
+
+- Python : langage de programmation utilisé.
+- Jupyter Notebook : environnement de développement et d'exécution du projet.
+- GitHub : plateforme utilisée pour l'hébergement et la gestion du projet.
+
+---
+
+*Les ressources ont été consultées dans le cadre de la réalisation du projet F8.*
